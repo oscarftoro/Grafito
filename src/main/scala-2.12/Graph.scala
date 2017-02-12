@@ -4,24 +4,31 @@
   * as presented in the Inductive Graphs and Functional Graph Algorithms paper
   *
   */
+//Where type C corresponds to an Int type in the original paper
 
-sealed trait GraphPiece[A,B]
-case class  Node[A,B](id: Int) extends GraphPiece[A,B]
-case class  Adj[A,B](adjList: Seq[(B,Node[A,B])]) extends GraphPiece[A,B]
-case class  Context[A,B](inputs: Adj[A,B],node: Node[A,B],a: A,outputs: Adj[A,B]) extends GraphPiece[A,B]
+sealed trait GraphPiece[+A,+B,+C]
+case class  Node[+A,+B,+C](id:C) extends GraphPiece[A,B,C]
+case class  Adj[+A,+B,+C](adjList: Seq[(B,Node[A,B,C])])
+  extends GraphPiece[A,B,C]
 
-sealed trait Graph[A,B]
-case object Empty extends Graph[Nothing,Nothing]
-case class  And[A,B](context: Context[A,B],graph: Graph[A,B]) extends Graph[A,B]
+sealed trait Graph[+A,+B,+C] {
+  def And[D >: A, E >: B, F >: C](graph: Graph[D, E, F]): And[D,E,F] =
+    new And(graph, this)
+}
+  case object Empty extends Graph[Nothing, Nothing, Nothing]
+  case class  Context[+A,+B,+C](inputs: Adj[A,B,C],node: Node[A,B,C],a: A
+                              ,outputs: Adj[A,B,C]) extends Graph[A,B,C]
+  case class And[+A, +B, +C](graph: Graph[A, B, C]
+                             , graph2: Graph[A, B, C]) extends Graph[A, B, C]
 
-class IGraph[A,B](graph: Graph[A,B]) extends Graph[A,B] {
 
-  def And [C >: A, D >: B](context: Context[C,D]): Graph[C,D] = new And(context,graph)
+class IGraph[+A,+B,+C](graph: Graph[A,B,C]) extends Graph[A,B,C] {
+  override def And[D >: A, E >: B, F >: C](graph2: Graph[D, E, F]): And[D,E,F] =
+    new And(graph2, graph)
 
 }
-
 object IGraph {
 
-  def apply[A,B](ig:Graph[A,B]): Graph[A,B] = new IGraph(ig)
+  def apply[A,B,C](ig:Graph[A,B,C]): Graph[A,B,C] = new IGraph(ig)
 
 }
